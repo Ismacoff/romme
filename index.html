@@ -7,7 +7,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>RomméScore 4.3 GitHub</title>
+<title>RomméScore 4.4 Online-Kartenerkennung</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#073d24;color:#fff}
@@ -30,6 +30,12 @@ h2{margin:0 0 8px;font-size:28px}.muted{color:#6d7872}.btn{width:100%;border:0;b
 .realCardBtn:active{transform:scale(.96)}
 .cardLabel{text-align:center;font-size:11px;font-weight:800;margin-top:2px;color:#536159}
 .cardSourceNote{font-size:12px;color:#6d7872;margin:8px 0 12px}.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.chip{background:#edf8f1;color:#0b6a3f;padding:7px 9px;border-radius:999px;font-size:13px;font-weight:800}.summary{background:#edf8f1;border-radius:12px;padding:12px;margin-top:10px}.sectionTitle{margin-top:22px;padding-top:16px;border-top:1px solid #e1e6e3}.photoBox{border:2px dashed #a9c8b5;border-radius:14px;padding:14px;background:#f7fbf8;text-align:center}.photoPreview{width:100%;max-height:320px;object-fit:contain;border-radius:12px;margin-top:10px;background:#eef4f0}
+.recognitionBox{background:#f4f9f6;border:1px solid #dfe9e3;border-radius:14px;padding:12px;margin-top:12px}
+.recognitionHead{display:flex;align-items:center;justify-content:space-between;gap:8px}.recognitionTotal{font-size:24px;font-weight:900;color:#0b6a3f}
+.recognizedList{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}.recognizedCard{display:flex;align-items:center;gap:6px;background:white;border:1px solid #dce7df;border-radius:999px;padding:7px 9px;font-weight:800}
+.recognizedCard button{border:0;background:#ffe8e8;color:#a62b2b;border-radius:999px;width:24px;height:24px;font-weight:900}.conf{font-size:11px;color:#6d7872}
+.addCardRow{display:grid;grid-template-columns:1fr 1fr auto;gap:7px;margin-top:10px}.addCardRow select{padding:10px;border:1px solid #d6e1da;border-radius:10px;background:white}
+.spinner{display:inline-block;width:18px;height:18px;border:3px solid #ffffff66;border-top-color:white;border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle;margin-right:6px}@keyframes spin{to{transform:rotate(360deg)}}
 .statsGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
 .statBox{background:#f4f9f6;border:1px solid #e5eee8;border-radius:14px;padding:13px}
 .statBox span{display:block;color:#6d7872;font-size:13px}.statBox b{display:block;font-size:25px;margin-top:3px}
@@ -49,7 +55,7 @@ h2{margin:0 0 8px;font-size:28px}.muted{color:#6d7872}.btn{width:100%;border:0;b
 <div class="app">
 <header class="head">
   <div class="logo">🃏</div>
-  <div><h1>RomméScore</h1><p>Version 4.3 · GitHub/PWA</p></div>
+  <div><h1>RomméScore</h1><p>Version 4.4 · Online-Kartenerkennung</p></div>
   <button class="gear" id="gearBtn">⚙️</button>
 </header>
 
@@ -84,8 +90,8 @@ var db=loadDb();
 var startMode=false, editId=null, pendingAvatar=null, pattern="pat1", frame="f1", avatarScale=1, avatarX=0, avatarY=0, currentLoser=null, selectedCards=[], selectedPlayerIds=[], cardPhotoData=null, dragStartX=0, dragStartY=0, dragBaseX=0, dragBaseY=0, pinchStartDist=0, pinchBaseScale=1;
 var frameColors={f1:"#0b6a3f",f2:"#111",f3:"#e7b548",f4:"#b82d2d",f5:"#315fa7",f6:"#fff"};
 
-function defaults(){return {players:[],game:null,history:[],rules:{ace:11,joker:20,handMultiplier:2}}}
-function loadDb(){try{var s=localStorage.getItem(KEY);return s?JSON.parse(s):defaults()}catch(e){return defaults()}}
+function defaults(){return {players:[],game:null,history:[],rules:{ace:11,joker:20,handMultiplier:2},online:{recognitionUrl:""}}}
+function loadDb(){try{var s=localStorage.getItem(KEY),d=s?JSON.parse(s):defaults();if(!d.rules)d.rules=defaults().rules;if(!d.online)d.online={recognitionUrl:""};return d}catch(e){return defaults()}}
 function saveDb(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}}
 function showError(e){var b=document.getElementById("errorBox");if(!b)return;b.style.display="block";b.textContent="App-Fehler: "+(e&&e.message?e.message:String(e));}
 function run(fn){try{fn()}catch(e){showError(e)}}
@@ -307,72 +313,55 @@ function cardAssetUrl(rank,suit){
  return "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/"+rankCode+suitCode+".svg";
 }
 function showCardEntry(id){
- currentLoser=id;
- selectedCards=[];
- cardPhotoData=null;
- var p=db.game.players.find(function(x){return String(x.id)===String(id)});
- if(!p)throw new Error("Spieler nicht gefunden");
-
+ currentLoser=id;selectedCards=[];recognizedCards=[];cardPhotoData=null;
+ var p=db.game.players.find(function(x){return String(x.id)===String(id)});if(!p)throw new Error("Spieler nicht gefunden");
  main.innerHTML='<div id="errorBox"></div><button class="back" id="cardBack">‹ Zurück</button><section class="card"><h2>🃏 '+esc(p.name)+'s Minuspunkte</h2>'+
- '<h3>1. Manuelle Punkteeingabe</h3><p class="muted">Wenn du die Summe schon kennst, einfach direkt eintragen.</p><input id="manual" class="field" type="number" min="0" placeholder="Gesamt-Minuspunkte, z. B. 47"><button class="btn green" id="manualBtn">✅ Manuelle Punkte übernehmen</button>'+
- '<div class="sectionTitle"><h3>2. Fotoerkennung</h3><p class="muted">Restkarten fotografieren. Die automatische Erkennung wird später an dieser Stelle eingebaut.</p><div class="photoBox"><button class="btn light" id="photoBtn">📷 Karten fotografieren</button><div id="photoPreviewWrap"></div><button class="btn light" id="recognizeBtn" disabled>🔎 Foto erkennen</button></div></div>'+
- '<div class="sectionTitle"><h3>3. Karten auswählen</h3><p class="muted">Alternativ die Restkarten einzeln antippen.</p><div class="cardSourceNote">Darstellung als vollständige französische Spielkarten.</div><div class="cards" id="cardGrid"></div><div id="sel"></div><button class="btn light" id="undoBtn">↩️ Letzte entfernen</button><button class="btn light" id="clearBtn">🗑️ Leeren</button><button class="btn green" id="takeCardsBtn">✅ Kartenpunkte übernehmen</button></div>'+
- '</section>';
-
+ '<h3>1. Manuelle Punkteeingabe</h3><p class="muted">Wenn du die Summe schon kennst, direkt eintragen.</p><input id="manual" class="field" type="number" min="0" placeholder="Gesamt-Minuspunkte, z. B. 47"><button class="btn green" id="manualBtn">✅ Manuelle Punkte übernehmen</button>'+
+ '<div class="sectionTitle"><h3>2. Fotoerkennung</h3><p class="muted">Restkarten fotografieren. Die erkannten Karten kannst du vor dem Übernehmen korrigieren.</p><div class="photoBox"><button class="btn light" id="photoBtn">📷 Karten fotografieren</button><div id="photoPreviewWrap"></div><button class="btn green" id="recognizeBtn" disabled>🔎 Karten online erkennen</button><div id="recognitionResult"></div></div></div>'+
+ '<div class="sectionTitle"><h3>3. Karten auswählen</h3><p class="muted">Alternativ die Restkarten einzeln antippen.</p><div class="cardSourceNote">Darstellung als vollständige französische Spielkarten.</div><div class="cards" id="cardGrid"></div><div id="sel"></div><button class="btn light" id="undoBtn">↩️ Letzte entfernen</button><button class="btn light" id="clearBtn">🗑️ Leeren</button><button class="btn green" id="takeCardsBtn">✅ Kartenpunkte übernehmen</button></div></section>';
  document.getElementById("cardBack").onclick=function(){run(showLosers)};
  document.getElementById("manualBtn").onclick=function(){run(takeManual)};
-
  document.getElementById("photoBtn").onclick=function(){document.getElementById("cardPhotoFile").click()};
- document.getElementById("recognizeBtn").onclick=function(){alert("Die automatische Foto-Kartenerkennung bauen wir später hier ein.")};
+ document.getElementById("recognizeBtn").onclick=function(){run(recognizeCardPhoto)};
  document.getElementById("cardPhotoFile").onchange=function(e){
-   var file=e.target.files[0];
-   if(!file)return;
-   var r=new FileReader();
-   r.onload=function(ev){
-     cardPhotoData=ev.target.result;
-     document.getElementById("photoPreviewWrap").innerHTML='<img class="photoPreview" src="'+cardPhotoData+'">';
-     document.getElementById("recognizeBtn").disabled=false;
-   };
+   var file=e.target.files[0];if(!file)return;var r=new FileReader();
+   r.onload=function(ev){cardPhotoData=ev.target.result;recognizedCards=[];document.getElementById("photoPreviewWrap").innerHTML='<img class="photoPreview" src="'+cardPhotoData+'">';document.getElementById("recognizeBtn").disabled=false;document.getElementById("recognitionResult").innerHTML='';};
    r.readAsDataURL(file);
  };
-
  var g=document.getElementById("cardGrid"),ranks=["2","3","4","5","6","7","8","9","10","B","D","K","A"],suits=["♣","♠","♥","♦"];
- ranks.forEach(function(r){
-   suits.forEach(function(s){
-     var b=document.createElement("button");
-     b.className="realCardBtn";
-     var img=document.createElement("img");
-     img.src=cardAssetUrl(r,s);
-     img.alt=r+s;
-     img.loading="lazy";
-     b.appendChild(img);
-     var label=document.createElement("div");
-     label.className="cardLabel";
-     label.textContent=r+s;
-     b.appendChild(label);
-     b.onclick=function(){addCard(r+s,cardValue(r))};
-     g.appendChild(b);
-   })
- });
- var j=document.createElement("button");
- j.className="realCardBtn";
- var ji=document.createElement("img");
- ji.src=cardAssetUrl("Joker","");
- ji.alt="Joker";
- ji.loading="lazy";
- j.appendChild(ji);
- var jl=document.createElement("div");
- jl.className="cardLabel";
- jl.textContent="Joker";
- j.appendChild(jl);
- j.onclick=function(){addCard("Joker",cardValue("Joker"))};
- g.appendChild(j);
-
+ ranks.forEach(function(r){suits.forEach(function(s){var b=document.createElement("button");b.className="realCardBtn";var img=document.createElement("img");img.src=cardAssetUrl(r,s);img.alt=r+s;img.loading="lazy";b.appendChild(img);var label=document.createElement("div");label.className="cardLabel";label.textContent=r+s;b.appendChild(label);b.onclick=function(){addCard(r+s,cardValue(r))};g.appendChild(b);})});
+ var j=document.createElement("button");j.className="realCardBtn";var ji=document.createElement("img");ji.src=cardAssetUrl("Joker","");ji.alt="Joker";ji.loading="lazy";j.appendChild(ji);var jl=document.createElement("div");jl.className="cardLabel";jl.textContent="Joker";j.appendChild(jl);j.onclick=function(){addCard("Joker",cardValue("Joker"))};g.appendChild(j);
  document.getElementById("undoBtn").onclick=function(){selectedCards.pop();renderSelected()};
  document.getElementById("clearBtn").onclick=function(){selectedCards=[];renderSelected()};
  document.getElementById("takeCardsBtn").onclick=function(){run(takeCards)};
  renderSelected();
 }
+function normalizeRecognizedCard(c){
+ var rank=String(c.rank||"").toUpperCase().trim(),suit=String(c.suit||"").trim();
+ if(rank==="J"||rank==="BUBE")rank="B";if(rank==="Q"||rank==="DAME")rank="D";if(rank==="KING"||rank==="KÖNIG")rank="K";if(rank==="ACE"||rank==="ASS")rank="A";
+ if(rank==="JOKER")return {rank:"Joker",suit:"",confidence:Number(c.confidence)||0.5};
+ var sm={"clubs":"♣","club":"♣","kreuz":"♣","♣":"♣","spades":"♠","spade":"♠","pik":"♠","♠":"♠","hearts":"♥","heart":"♥","herz":"♥","♥":"♥","diamonds":"♦","diamond":"♦","karo":"♦","♦":"♦"};
+ suit=sm[String(suit).toLowerCase()]||sm[suit]||suit;return {rank:rank,suit:suit,confidence:Number(c.confidence)||0.5};
+}
+function recognizedValue(c){return cardValue(c.rank)}
+function recognizeCardPhoto(){
+ if(!cardPhotoData){alert("Bitte zuerst ein Kartenfoto aufnehmen.");return}
+ var url=(db.online&&db.online.recognitionUrl||"").trim();if(!url){alert("Unter Einstellungen bitte zuerst die Recognition-URL eintragen.");return}
+ var btn=document.getElementById("recognizeBtn");btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Erkennung läuft …';document.getElementById("recognitionResult").innerHTML='<div class="notice">Foto wird analysiert …</div>';
+ fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({image:cardPhotoData})})
+ .then(function(resp){if(!resp.ok)return resp.text().then(function(t){throw new Error("Server "+resp.status+": "+t)});return resp.json()})
+ .then(function(data){recognizedCards=(data.cards||[]).map(normalizeRecognizedCard).filter(function(c){return c.rank==="Joker"||(["2","3","4","5","6","7","8","9","10","B","D","K","A"].indexOf(c.rank)>=0&&["♣","♠","♥","♦"].indexOf(c.suit)>=0)});renderRecognition()})
+ .catch(function(err){document.getElementById("recognitionResult").innerHTML='<div class="notice" style="background:#ffeaea;color:#8b2828">Erkennung fehlgeschlagen: '+esc(err.message)+'</div>'})
+ .finally(function(){btn.disabled=false;btn.textContent="🔎 Karten erneut erkennen"});
+}
+function renderRecognition(){
+ var box=document.getElementById("recognitionResult");if(!box)return;var total=recognizedCards.reduce(function(sum,c){return sum+recognizedValue(c)},0);
+ var chips=recognizedCards.map(function(c,i){var label=c.rank==="Joker"?"Joker":c.rank+c.suit;var pct=Math.round((c.confidence||0)*100);return '<div class="recognizedCard"><span>'+label+'</span><span class="conf">'+pct+'%</span><button onclick="removeRecognized('+i+')">×</button></div>'}).join("");
+ box.innerHTML='<div class="recognitionBox"><div class="recognitionHead"><b>Erkannte Karten</b><span class="recognitionTotal">'+total+' Punkte</span></div><div class="recognizedList">'+(chips||'<span class="muted">Keine Karten erkannt.</span>')+'</div><div class="addCardRow"><select id="addRank"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>B</option><option>D</option><option>K</option><option>A</option><option>Joker</option></select><select id="addSuit"><option value="♣">♣ Kreuz</option><option value="♠">♠ Pik</option><option value="♥">♥ Herz</option><option value="♦">♦ Karo</option></select><button class="btn light" style="width:auto;margin:0" onclick="addRecognizedManual()">＋</button></div><button class="btn green" onclick="takeRecognizedScore()">✅ Erkennung übernehmen</button></div>';
+}
+function removeRecognized(i){recognizedCards.splice(i,1);renderRecognition()}
+function addRecognizedManual(){var r=document.getElementById("addRank").value,s=document.getElementById("addSuit").value;recognizedCards.push({rank:r,suit:r==="Joker"?"":s,confidence:1});renderRecognition()}
+function takeRecognizedScore(){var total=recognizedCards.reduce(function(sum,c){return sum+recognizedValue(c)},0);db.game.tempScores[currentLoser]=total;saveDb();showLosers()}
 function addCard(n,v){selectedCards.push({n:n,v:v});renderSelected()}
 function renderSelected(){var e=document.getElementById("sel");if(!e)return;var sum=0,h="";selectedCards.forEach(function(c){sum+=c.v;h+='<span class="chip">'+c.n+' ('+c.v+')</span>'});e.innerHTML='<div class="summary"><b>Ausgewählte Karten</b><div class="chips">'+h+'</div><p><strong>'+sum+' Minuspunkte</strong></p></div>'}
 function takeCards(){var sum=0;selectedCards.forEach(function(c){sum+=c.v});db.game.tempScores[currentLoser]=sum;saveDb();showLosers()}
@@ -465,8 +454,12 @@ function showStats(){
    list.appendChild(div);
  });
 }
-function showSettings(){nav("nSettings");main.innerHTML='<div id="errorBox"></div><section class="card"><h2>⚙️ Einstellungen</h2><label>Ass</label><input id="ace" class="field" value="'+db.rules.ace+'"><label>Joker</label><input id="joker" class="field" value="'+db.rules.joker+'"><label>Handspiel-Multiplikator</label><input id="multi" class="field" value="'+db.rules.handMultiplier+'"><button class="btn green" id="saveRulesBtn">💾 Regeln speichern</button></section>';document.getElementById("saveRulesBtn").onclick=function(){run(saveRules)}}
-function saveRules(){db.rules.ace=Number(document.getElementById("ace").value)||11;db.rules.joker=Number(document.getElementById("joker").value)||20;db.rules.handMultiplier=Number(document.getElementById("multi").value)||2;saveDb();alert("Regeln gespeichert.")}
+function showSettings(){
+ nav("nSettings");var recUrl=(db.online&&db.online.recognitionUrl)||"";
+ main.innerHTML='<div id="errorBox"></div><section class="card"><h2>⚙️ Einstellungen</h2><h3>Spielregeln</h3><label>Ass</label><input id="ace" class="field" value="'+db.rules.ace+'"><label>Joker</label><input id="joker" class="field" value="'+db.rules.joker+'"><label>Handspiel-Multiplikator</label><input id="multi" class="field" value="'+db.rules.handMultiplier+'"><h3 style="margin-top:20px">Online-Kartenerkennung</h3><p class="muted">Hier die URL deines sicheren Erkennungs-Backends eintragen. Der API-Key gehört niemals in die HTML-Datei.</p><input id="recognitionUrl" class="field" placeholder="https://dein-worker.workers.dev/recognize" value="'+esc(recUrl)+'"><button class="btn green" id="saveRulesBtn">💾 Einstellungen speichern</button></section>';
+ document.getElementById("saveRulesBtn").onclick=function(){run(saveRules)};
+}
+function saveRules(){db.rules.ace=Number(document.getElementById("ace").value)||11;db.rules.joker=Number(document.getElementById("joker").value)||20;db.rules.handMultiplier=Number(document.getElementById("multi").value)||2;if(!db.online)db.online={};db.online.recognitionUrl=(document.getElementById("recognitionUrl").value||"").trim();saveDb();alert("Einstellungen gespeichert.")}
 
 document.getElementById("gearBtn").onclick=function(){run(showSettings)};
 document.getElementById("nGame").onclick=function(){run(showGameOrHome)};
