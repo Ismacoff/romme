@@ -7,7 +7,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>RomméScore 4.4 Online-Kartenerkennung</title>
+<title>RomméScore 4.4.1</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#073d24;color:#fff}
@@ -55,7 +55,7 @@ h2{margin:0 0 8px;font-size:28px}.muted{color:#6d7872}.btn{width:100%;border:0;b
 <div class="app">
 <header class="head">
   <div class="logo">🃏</div>
-  <div><h1>RomméScore</h1><p>Version 4.4 · Online-Kartenerkennung</p></div>
+  <div><h1>RomméScore</h1><p>Version 4.4.1 · Kartenerkennung-Fix</p></div>
   <button class="gear" id="gearBtn">⚙️</button>
 </header>
 
@@ -87,7 +87,7 @@ h2{margin:0 0 8px;font-size:28px}.muted{color:#6d7872}.btn{width:100%;border:0;b
 var KEY="rommescore_v35";
 var main=document.getElementById("appMain");
 var db=loadDb();
-var startMode=false, editId=null, pendingAvatar=null, pattern="pat1", frame="f1", avatarScale=1, avatarX=0, avatarY=0, currentLoser=null, selectedCards=[], selectedPlayerIds=[], cardPhotoData=null, dragStartX=0, dragStartY=0, dragBaseX=0, dragBaseY=0, pinchStartDist=0, pinchBaseScale=1;
+var startMode=false, editId=null, pendingAvatar=null, pattern="pat1", frame="f1", avatarScale=1, avatarX=0, avatarY=0, currentLoser=null, selectedCards=[], selectedPlayerIds=[], cardPhotoData=null, dragStartX=0, dragStartY=0, dragBaseX=0, dragBaseY=0, pinchStartDist=0, pinchBaseScale=1,recognizedCards=[];
 var frameColors={f1:"#0b6a3f",f2:"#111",f3:"#e7b548",f4:"#b82d2d",f5:"#315fa7",f6:"#fff"};
 
 function defaults(){return {players:[],game:null,history:[],rules:{ace:11,joker:20,handMultiplier:2},online:{recognitionUrl:""}}}
