@@ -7,7 +7,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>RomméScore 4.4.3</title>
+<title>RomméScore 4.4.4</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#073d24;color:#fff}
@@ -55,7 +55,7 @@ h2{margin:0 0 8px;font-size:28px}.muted{color:#6d7872}.btn{width:100%;border:0;b
 <div class="app">
 <header class="head">
   <div class="logo">🃏</div>
-  <div><h1>RomméScore</h1><p>Version 4.4.3 · Rundenablauf-Fix</p></div>
+  <div><h1>RomméScore</h1><p>Version 4.4.4 · Handy-Speicher-Fix</p></div>
   <button class="gear" id="gearBtn">⚙️</button>
 </header>
 
@@ -92,7 +92,21 @@ var frameColors={f1:"#0b6a3f",f2:"#111",f3:"#e7b548",f4:"#b82d2d",f5:"#315fa7",f
 
 function defaults(){return {players:[],game:null,history:[],rules:{ace:11,joker:20,handMultiplier:2},online:{recognitionUrl:""}}}
 function loadDb(){try{var s=localStorage.getItem(KEY),d=s?JSON.parse(s):defaults();if(!d.rules)d.rules=defaults().rules;if(!d.online)d.online={recognitionUrl:""};return d}catch(e){return defaults()}}
-function saveDb(){try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){throw new Error("Der Spielstand konnte nicht gespeichert werden. Bitte prüfe den freien Speicherplatz.")}}
+function stripStoredAvatarCopies(){
+ var changed=false,games=[];
+ if(db.game)games.push(db.game);
+ (db.history||[]).forEach(function(g){games.push(g)});
+ games.forEach(function(g){(g.players||[]).forEach(function(p){["avatar","avatarPattern","avatarFrame","avatarScale","avatarX","avatarY"].forEach(function(k){if(hasOwn(p,k)){delete p[k];changed=true}})})});
+ return changed;
+}
+function saveDb(){
+ try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){
+   if(stripStoredAvatarCopies()){
+     try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(retryError){}
+   }
+   throw new Error("Der Spielstand ist für den Handy-Speicher zu groß. Bitte entferne ein sehr großes Avatarbild und füge es erneut hinzu.")
+ }
+}
 function showError(e){var b=document.getElementById("errorBox");if(!b)return;b.style.display="block";b.textContent="App-Fehler: "+(e&&e.message?e.message:String(e));}
 function run(fn){try{fn()}catch(e){showError(e)}}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]})}
@@ -100,9 +114,10 @@ function ini(n){var a=String(n).trim().split(/\s+/),r="";for(var i=0;i<a.length&
 function cardValue(r){if(r==="Joker")return db.rules.joker;if(r==="B"||r==="D"||r==="K")return 10;if(r==="A")return db.rules.ace;return Number(r)||0}
 function nav(id){["nGame","nPlayers","nPoints","nStats","nSettings"].forEach(function(x){document.getElementById(x).classList.toggle("on",x===id)})}
 function avatar(p){
- var pat=p.avatarPattern||"pat1",fr=p.avatarFrame||"f1";
- var sc=(p.avatarScale==null?1:Number(p.avatarScale)),x=Number(p.avatarX)||0,y=Number(p.avatarY)||0;
- var img=p.avatar?'<img src="'+p.avatar+'" style="transform:translate('+x+'%, '+y+'%) scale('+sc+')">':ini(p.name);
+ var master=(db.players||[]).find(function(x){return String(x.id)===String(p.id)})||p;
+ var pat=master.avatarPattern||"pat1",fr=master.avatarFrame||"f1";
+ var sc=(master.avatarScale==null?1:Number(master.avatarScale)),x=Number(master.avatarX)||0,y=Number(master.avatarY)||0;
+ var img=master.avatar?'<img src="'+master.avatar+'" style="transform:translate('+x+'%, '+y+'%) scale('+sc+')">':ini(p.name);
  return '<div class="avatarShell '+pat+'" style="border-color:'+frameColors[fr]+'"><div class="avatarInner">'+img+'</div></div>';
 }
 function resetError(){var b=document.getElementById("errorBox");if(b){b.style.display="none";b.textContent=""}}
@@ -281,7 +296,7 @@ function saveAvatar(){var p=db.players.find(function(x){return String(x.id)===St
 function startGame(){
  var chosen=db.players.filter(function(p){return selectedPlayerIds.indexOf(String(p.id))>=0});
  if(chosen.length<2){alert("Bitte mindestens zwei Spieler auswählen.");return}
- db.game={round:0,rounds:[],players:chosen.map(function(p){return {id:p.id,name:p.name,avatar:p.avatar,avatarPattern:p.avatarPattern,avatarFrame:p.avatarFrame,avatarScale:p.avatarScale||1,avatarX:p.avatarX||0,avatarY:p.avatarY||0,score:0}})};
+ db.game={round:0,rounds:[],players:chosen.map(function(p){return {id:p.id,name:p.name,score:0}})};
  saveDb();showGame();
 }
 function showGame(){
