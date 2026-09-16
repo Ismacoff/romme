@@ -7,7 +7,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>RomméScore 4.4.2</title>
+<title>RomméScore 4.4.3</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#073d24;color:#fff}
@@ -21,7 +21,7 @@ h2{margin:0 0 8px;font-size:28px}.muted{color:#6d7872}.btn{width:100%;border:0;b
 .row{display:flex;align-items:center;gap:12px;background:#f4f9f6;border:1px solid #e5eee8;border-radius:16px;padding:10px;margin:10px 0}.selectable{cursor:pointer;transition:.15s}.selectable.selectedPlayer{background:#e7f6ed;border-color:#0b6a3f;box-shadow:0 0 0 2px #0b6a3f22}.pick{width:26px;height:26px;accent-color:#0b6a3f;flex:none}.selectionBar{background:#edf8f1;color:#155c36;border-radius:12px;padding:11px;margin:10px 0;font-weight:800}.info{flex:1}.info b{display:block;font-size:19px}.info small{color:#6d7872}.score{font-weight:900;font-size:23px}
 .avatarShell{width:72px;height:72px;border-radius:50%;padding:0;border:4px solid #0b6a3f;display:grid;place-items:center;flex:none;overflow:hidden}.avatarInner{width:100%;height:100%;border-radius:50%;overflow:hidden;background:transparent;display:grid;place-items:center;font-weight:900;color:#0b6a3f;position:relative}.avatarInner img{width:100%;height:100%;object-fit:cover;mix-blend-mode:multiply;opacity:.92;transform-origin:center center}
 .pat1{background:repeating-conic-gradient(from 0deg,#e9f7d7 0 11deg,#cfeab9 11deg 22deg)}.pat2{background-color:#dff1fb;background-image:radial-gradient(#b9ddef 17%,transparent 18%);background-size:14px 14px}.pat3{background:repeating-conic-gradient(from 8deg,#fff0d5 0 13deg,#fbdcad 13deg 26deg)}.pat4{background:#f9dede}.pat5{background:#eee3f7}.pat6{background:#fff6cf}.pat7{background:#def4ea}.pat8{background:#efefef}
-.form{display:flex;gap:8px}.field{width:100%;padding:13px;border:2px solid #dce6e0;border-radius:12px;font-size:16px}.form .field{flex:1}.notice{background:#fff6d8;color:#6f5610;border-radius:12px;padding:12px;margin-top:10px}.ok{background:#eaf8ef;color:#155c36}
+.form{display:flex;gap:8px}.field{width:100%;padding:13px;border:2px solid #dce6e0;border-radius:12px;font-size:16px}.form .field{flex:1}.notice{background:#fff6d8;color:#6f5610;border-radius:12px;padding:12px;margin-top:10px}.ok{background:#eaf8ef;color:#155c36}.btn:disabled{opacity:.48;cursor:not-allowed}.winnerChoice{cursor:pointer;transition:.15s}.winnerChoice.selectedPlayer{background:#e7f6ed;border-color:#0b6a3f;box-shadow:0 0 0 2px #0b6a3f22}
 .editor{display:grid;grid-template-columns:250px 1fr;gap:18px}.preview{width:240px;height:240px;border-radius:50%;padding:0;border:10px solid #0b6a3f;margin:auto;overflow:hidden}.previewInner{width:100%;height:100%;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:48px;font-weight:900;color:#0b6a3f;position:relative}.previewInner img{width:100%;height:100%;object-fit:cover;mix-blend-mode:multiply;opacity:.92;transform-origin:center center;touch-action:none;user-select:none;-webkit-user-drag:none}.previewInner{touch-action:none;cursor:grab}.previewInner.dragging{cursor:grabbing}.gestureHint{background:#eaf8ef;color:#155c36;border-radius:12px;padding:10px;margin-top:10px;font-size:13px}.controlGroup{margin:14px 0}.controlGroup label{display:block;font-weight:800;margin-bottom:5px}.controlGroup input[type=range]{width:100%}.controlValue{font-size:12px;color:#6d7872;text-align:right}.resetBtn{width:100%;border:0;border-radius:11px;padding:10px;background:#f3f3f3;color:#444;font-weight:800;margin-top:8px}
 .swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.swatch{aspect-ratio:1;border-radius:12px;border:3px solid transparent}.sel{border-color:#111}.frames{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.frame{aspect-ratio:1;border-radius:50%;background:#fff;border:7px solid}.f1{border-color:#0b6a3f}.f2{border-color:#111}.f3{border-color:#e7b548}.f4{border-color:#b82d2d}.f5{border-color:#315fa7}.f6{border-color:#fff;box-shadow:0 0 0 1px #bbb}
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.cardbtn{border:2px solid #dfe9e3;background:#fff;border-radius:10px;padding:10px 4px;font-weight:900}.redtxt{color:#b32626}
@@ -55,7 +55,7 @@ h2{margin:0 0 8px;font-size:28px}.muted{color:#6d7872}.btn{width:100%;border:0;b
 <div class="app">
 <header class="head">
   <div class="logo">🃏</div>
-  <div><h1>RomméScore</h1><p>Version 4.4.2 · Cloudflare-Erkennung</p></div>
+  <div><h1>RomméScore</h1><p>Version 4.4.3 · Rundenablauf-Fix</p></div>
   <button class="gear" id="gearBtn">⚙️</button>
 </header>
 
@@ -87,12 +87,12 @@ h2{margin:0 0 8px;font-size:28px}.muted{color:#6d7872}.btn{width:100%;border:0;b
 var KEY="rommescore_v35";
 var main=document.getElementById("appMain");
 var db=loadDb();
-var startMode=false, editId=null, pendingAvatar=null, pattern="pat1", frame="f1", avatarScale=1, avatarX=0, avatarY=0, currentLoser=null, selectedCards=[], selectedPlayerIds=[], cardPhotoData=null, dragStartX=0, dragStartY=0, dragBaseX=0, dragBaseY=0, pinchStartDist=0, pinchBaseScale=1,recognizedCards=[];
+var startMode=false, editId=null, pendingAvatar=null, pattern="pat1", frame="f1", avatarScale=1, avatarX=0, avatarY=0, currentLoser=null, selectedCards=[], selectedPlayerIds=[], cardPhotoData=null, dragStartX=0, dragStartY=0, dragBaseX=0, dragBaseY=0, pinchStartDist=0, pinchBaseScale=1,recognizedCards=[],roundSaving=false;
 var frameColors={f1:"#0b6a3f",f2:"#111",f3:"#e7b548",f4:"#b82d2d",f5:"#315fa7",f6:"#fff"};
 
-function defaults(){return {players:[],game:null,history:[],rules:{ace:11,joker:20,handMultiplier:2},online:{recognitionUrl:"https://rommescore-recognition.arndt-hsv.workers.dev"}}}
-function loadDb(){try{var s=localStorage.getItem(KEY),d=s?JSON.parse(s):defaults();if(!d.rules)d.rules=defaults().rules;if(!d.online)d.online={recognitionUrl:"https://rommescore-recognition.arndt-hsv.workers.dev"};if(!d.online.recognitionUrl)d.online.recognitionUrl="https://rommescore-recognition.arndt-hsv.workers.dev";return d}catch(e){return defaults()}}
-function saveDb(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}}
+function defaults(){return {players:[],game:null,history:[],rules:{ace:11,joker:20,handMultiplier:2},online:{recognitionUrl:""}}}
+function loadDb(){try{var s=localStorage.getItem(KEY),d=s?JSON.parse(s):defaults();if(!d.rules)d.rules=defaults().rules;if(!d.online)d.online={recognitionUrl:""};return d}catch(e){return defaults()}}
+function saveDb(){try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){throw new Error("Der Spielstand konnte nicht gespeichert werden. Bitte prüfe den freien Speicherplatz.")}}
 function showError(e){var b=document.getElementById("errorBox");if(!b)return;b.style.display="block";b.textContent="App-Fehler: "+(e&&e.message?e.message:String(e));}
 function run(fn){try{fn()}catch(e){showError(e)}}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]})}
@@ -107,6 +107,16 @@ function avatar(p){
 }
 function resetError(){var b=document.getElementById("errorBox");if(b){b.style.display="none";b.textContent=""}}
 function button(text,cls,fn){var b=document.createElement("button");b.className="btn "+cls;b.textContent=text;b.addEventListener("click",function(){run(fn)});return b}
+function hasOwn(obj,key){return Object.prototype.hasOwnProperty.call(obj,key)}
+function validPlayerId(id){return db.game&&db.game.players.some(function(p){return String(p.id)===String(id)})}
+function recalculateGameScores(){
+ if(!db.game)return;
+ db.game.players.forEach(function(p){p.score=0});
+ (db.game.rounds||[]).forEach(function(r){
+   db.game.players.forEach(function(p){var v=Number(r.scores&&r.scores[p.id]);if(Number.isFinite(v)&&v>=0)p.score+=v})
+ });
+ db.game.round=(db.game.rounds||[]).length;
+}
 
 function showHome(){
  nav("nGame");
@@ -275,12 +285,13 @@ function startGame(){
  saveDb();showGame();
 }
 function showGame(){
+ recalculateGameScores();
  nav("nGame");var s=db.game.players.slice().sort(function(a,b){return a.score-b.score});
  main.innerHTML='<div id="errorBox"></div><button class="back" id="backHome">‹ Startseite</button><section class="card" id="gameCard"><h2>🎲 Aktuelles Spiel</h2><p class="muted">Runde '+db.game.round+'</p></section>';
  document.getElementById("backHome").onclick=function(){run(showHome)};
  var c=document.getElementById("gameCard");
  s.forEach(function(p,i){var r=document.createElement("div");r.className="row"+(i===0&&db.game.round?" winner":"");r.innerHTML=avatar(p)+'<div class="info"><b>'+esc(p.name)+'</b><small>'+(i===0&&db.game.round?'Führt aktuell':'Im Spiel')+'</small></div><div class="score">'+p.score+'</div>';c.appendChild(r)});
- c.appendChild(button("➕ Neue Runde","green",showWinner));
+ c.appendChild(button(validPlayerId(db.game.tempWinner)?"▶️ Angefangene Runde fortsetzen":"➕ Neue Runde","green",function(){if(validPlayerId(db.game.tempWinner))showLosers();else showWinner()}));
  c.appendChild(button("🕘 Rundenhistorie","light",showRoundHistory));
  c.appendChild(button("🏁 Spiel beenden","red",finishGame));
 }
@@ -288,19 +299,25 @@ function showWinner(){
  main.innerHTML='<div id="errorBox"></div><button class="back" id="winnerBack">‹ Zum Spiel</button><section class="card"><h2>Gewinner auswählen</h2><p class="muted">Wähle den Gewinner und tippe anschließend auf Weiter.</p><div id="winnerList"></div><button class="btn green" id="winnerNext">Weiter zu den Minuspunkten →</button></section>';
  document.getElementById("winnerBack").onclick=function(){run(showGame)};
  var list=document.getElementById("winnerList");
- db.game.players.forEach(function(p,idx){var l=document.createElement("label");l.className="row";l.innerHTML='<input type="radio" name="winner" value="'+idx+'" style="width:24px;height:24px">'+avatar(p)+'<div class="info"><b>'+esc(p.name)+'</b><small>Hat ausgemacht</small></div>🏆';list.appendChild(l)});
+ db.game.players.forEach(function(p,idx){var selected=String(p.id)===String(db.game.tempWinner);var l=document.createElement("label");l.className="row winnerChoice"+(selected?" selectedPlayer":"");l.innerHTML='<input type="radio" name="winner" value="'+idx+'" style="width:24px;height:24px" '+(selected?'checked':'')+'>'+avatar(p)+'<div class="info"><b>'+esc(p.name)+'</b><small>Hat ausgemacht</small></div>🏆';list.appendChild(l)});
+ function updateWinnerSelection(){var checked=document.querySelector('input[name="winner"]:checked');document.getElementById("winnerNext").disabled=!checked;document.querySelectorAll(".winnerChoice").forEach(function(row){var radio=row.querySelector('input[name="winner"]');row.classList.toggle("selectedPlayer",!!radio.checked)})}
+ list.onchange=updateWinnerSelection;
+ updateWinnerSelection();
  document.getElementById("winnerNext").onclick=function(){run(confirmWinner)};
 }
-function confirmWinner(){var c=document.querySelector('input[name="winner"]:checked');if(!c){alert("Bitte Gewinner auswählen.");return}var idx=Number(c.value);db.game.tempWinner=db.game.players[idx].id;db.game.tempScores={};db.game.tempHand=false;saveDb();showLosers()}
+function confirmWinner(){var c=document.querySelector('input[name="winner"]:checked');if(!c){alert("Bitte Gewinner auswählen.");return}var idx=Number(c.value),winner=db.game.players[idx];if(!winner)throw new Error("Der ausgewählte Gewinner ist nicht mehr vorhanden.");if(String(db.game.tempWinner)!==String(winner.id)){db.game.tempScores={};db.game.tempHand=false}db.game.tempWinner=winner.id;if(!db.game.tempScores)db.game.tempScores={};saveDb();showLosers()}
 function showLosers(){
  var w=db.game.players.find(function(p){return String(p.id)===String(db.game.tempWinner)});if(!w)throw new Error("Gewinner nicht gefunden");
  main.innerHTML='<div id="errorBox"></div><button class="back" id="loserBack">‹ Gewinner ändern</button><section class="card"><h2>Minuspunkte erfassen</h2><div class="notice ok">🏆 Gewinner: <b>'+esc(w.name)+'</b></div><label class="notice" style="display:block"><input id="hand" type="checkbox" '+(db.game.tempHand?'checked':'')+'> <b>✋ Handspiel</b></label><div id="loserList"></div><button class="btn green" id="saveRoundBtn">💾 Runde abschließen</button></section>';
+ roundSaving=false;
  document.getElementById("loserBack").onclick=function(){run(showWinner)};
  document.getElementById("hand").onchange=function(e){db.game.tempHand=e.target.checked;saveDb()};
  var list=document.getElementById("loserList");
- db.game.players.filter(function(p){return String(p.id)!==String(db.game.tempWinner)}).forEach(function(p){var r=document.createElement("div");r.className="row";r.innerHTML=avatar(p)+'<div class="info"><b>'+esc(p.name)+'</b><small>'+(db.game.tempScores[p.id]!=null?db.game.tempScores[p.id]+' Punkte erfasst':'Noch offen')+'</small></div>';var b=button("🃏 Punkte","light",function(){showCardEntry(p.id)});b.style.width="auto";r.appendChild(b);list.appendChild(r)});
+ db.game.players.filter(function(p){return String(p.id)!==String(db.game.tempWinner)}).forEach(function(p){var r=document.createElement("div");r.className="row";r.innerHTML=avatar(p)+'<div class="info"><b>'+esc(p.name)+'</b><small>'+(hasOwn(db.game.tempScores,p.id)?db.game.tempScores[p.id]+' Punkte erfasst':'Noch offen')+'</small></div>';var b=button("🃏 Punkte","light",function(){showCardEntry(p.id)});b.style.width="auto";r.appendChild(b);list.appendChild(r)});
+ updateSaveRoundButton();
  document.getElementById("saveRoundBtn").onclick=function(){run(saveRound)};
 }
+function updateSaveRoundButton(){var b=document.getElementById("saveRoundBtn");if(!b||!db.game)return;var complete=db.game.players.filter(function(p){return String(p.id)!==String(db.game.tempWinner)}).every(function(p){return hasOwn(db.game.tempScores||{},p.id)&&Number.isFinite(Number(db.game.tempScores[p.id]))&&Number(db.game.tempScores[p.id])>=0});b.disabled=!complete||roundSaving;b.textContent=roundSaving?"Runde wird gespeichert …":"💾 Runde abschließen"}
 
 function cardAssetUrl(rank,suit){
  var suitCode={"♣":"C","♦":"D","♥":"H","♠":"S"}[suit]||"";
@@ -365,8 +382,18 @@ function takeRecognizedScore(){var total=recognizedCards.reduce(function(sum,c){
 function addCard(n,v){selectedCards.push({n:n,v:v});renderSelected()}
 function renderSelected(){var e=document.getElementById("sel");if(!e)return;var sum=0,h="";selectedCards.forEach(function(c){sum+=c.v;h+='<span class="chip">'+c.n+' ('+c.v+')</span>'});e.innerHTML='<div class="summary"><b>Ausgewählte Karten</b><div class="chips">'+h+'</div><p><strong>'+sum+' Minuspunkte</strong></p></div>'}
 function takeCards(){var sum=0;selectedCards.forEach(function(c){sum+=c.v});db.game.tempScores[currentLoser]=sum;saveDb();showLosers()}
-function takeManual(){db.game.tempScores[currentLoser]=Math.max(0,Number(document.getElementById("manual").value)||0);saveDb();showLosers()}
-function saveRound(){var mult=db.game.tempHand?db.rules.handMultiplier:1,r={number:db.game.round+1,winner:db.game.tempWinner,hand:db.game.tempHand,scores:{}};db.game.players.forEach(function(p){var v=String(p.id)===String(db.game.tempWinner)?0:(db.game.tempScores[p.id]||0)*mult;p.score+=v;r.scores[p.id]=v});db.game.round++;db.game.rounds.push(r);delete db.game.tempWinner;delete db.game.tempScores;delete db.game.tempHand;saveDb();showGame()}
+function takeManual(){var input=document.getElementById("manual"),raw=input.value.trim(),value=Number(raw);if(raw===""||!Number.isFinite(value)||value<0){alert("Bitte eine gültige Punktzahl ab 0 eingeben.");return}db.game.tempScores[currentLoser]=value;saveDb();showLosers()}
+function saveRound(){
+ if(roundSaving)return;
+ if(!db.game||!validPlayerId(db.game.tempWinner))throw new Error("Bitte zuerst einen Gewinner auswählen.");
+ var losers=db.game.players.filter(function(p){return String(p.id)!==String(db.game.tempWinner)}),missing=losers.filter(function(p){return !hasOwn(db.game.tempScores||{},p.id)||!Number.isFinite(Number(db.game.tempScores[p.id]))||Number(db.game.tempScores[p.id])<0});
+ if(missing.length){alert("Bitte zuerst die Punkte für "+missing.map(function(p){return p.name}).join(", ")+" erfassen.");updateSaveRoundButton();return}
+ var mult=db.game.tempHand?Number(db.rules.handMultiplier):1;if(!Number.isFinite(mult)||mult<=0)throw new Error("Der Handspiel-Multiplikator ist ungültig.");
+ roundSaving=true;updateSaveRoundButton();
+ var r={id:"round_"+Date.now()+"_"+Math.random().toString(36).slice(2),number:(db.game.rounds||[]).length+1,winner:db.game.tempWinner,hand:!!db.game.tempHand,scores:{}};
+ db.game.players.forEach(function(p){r.scores[p.id]=String(p.id)===String(db.game.tempWinner)?0:Number(db.game.tempScores[p.id])*mult});
+ db.game.rounds.push(r);recalculateGameScores();delete db.game.tempWinner;delete db.game.tempScores;delete db.game.tempHand;saveDb();showGame();
+}
 function showRoundHistory(){main.innerHTML='<div id="errorBox"></div><button class="back" id="rhBack">‹ Zum Spiel</button><section class="card"><h2>🕘 Rundenhistorie</h2><div class="notice">'+(db.game.rounds.length?db.game.rounds.length+' Runde(n) gespielt.':'Noch keine Runden.')+'</div></section>';document.getElementById("rhBack").onclick=function(){run(showGame)}}
 function finishGame(){
  if(!confirm("Spiel beenden und speichern?"))return;
