@@ -7,7 +7,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>RomméScore 4.5.0</title>
+<title>RomméScore 4.5.1</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#073d24;color:#fff}
@@ -56,7 +56,7 @@ h2{margin:0 0 8px;font-size:28px}.muted{color:#6d7872}.btn{width:100%;border:0;b
 <div class="app">
 <header class="head">
   <div class="logo"><img src="./icon-192.png" alt="RomméScore"></div>
-  <div><h1>RomméScore</h1><p>Version 4.5.0 · Wachbleib-Funktion</p></div>
+  <div><h1>RomméScore</h1><p>Version 4.5.1 · Karten-Erkennung</p></div>
   <button class="gear" id="gearBtn">⚙️</button>
 </header>
 
@@ -86,13 +86,14 @@ h2{margin:0 0 8px;font-size:28px}.muted{color:#6d7872}.btn{width:100%;border:0;b
 "use strict";
 
 var KEY="rommescore_v35";
+var RECOGNITION_URL="https://rommescore-recognition.arndt-hsv.workers.dev/";
 var main=document.getElementById("appMain");
 var db=loadDb();
 var startMode=false, editId=null, pendingAvatar=null, pattern="pat1", frame="f1", avatarScale=1, avatarX=0, avatarY=0, currentLoser=null, selectedCards=[], selectedPlayerIds=[], cardPhotoData=null, dragStartX=0, dragStartY=0, dragBaseX=0, dragBaseY=0, pinchStartDist=0, pinchBaseScale=1,recognizedCards=[],roundSaving=false,wakeLock=null,wakeLockState="off";
 var frameColors={f1:"#0b6a3f",f2:"#111",f3:"#e7b548",f4:"#b82d2d",f5:"#315fa7",f6:"#fff"};
 
-function defaults(){return {players:[],game:null,history:[],rules:{ace:11,joker:20,handMultiplier:2},settings:{keepAwake:true},online:{recognitionUrl:""}}}
-function loadDb(){try{var s=localStorage.getItem(KEY),d=s?JSON.parse(s):defaults();if(!d.rules)d.rules=defaults().rules;if(!d.settings)d.settings={keepAwake:true};if(typeof d.settings.keepAwake!=="boolean")d.settings.keepAwake=true;if(!d.online)d.online={recognitionUrl:""};return d}catch(e){return defaults()}}
+function defaults(){return {players:[],game:null,history:[],rules:{ace:11,joker:20,handMultiplier:2},settings:{keepAwake:true},online:{recognitionUrl:RECOGNITION_URL}}}
+function loadDb(){try{var s=localStorage.getItem(KEY),d=s?JSON.parse(s):defaults();if(!d.rules)d.rules=defaults().rules;if(!d.settings)d.settings={keepAwake:true};if(typeof d.settings.keepAwake!=="boolean")d.settings.keepAwake=true;if(!d.online)d.online={};if(!d.online.recognitionUrl)d.online.recognitionUrl=RECOGNITION_URL;return d}catch(e){return defaults()}}
 function stripStoredAvatarCopies(){
  var changed=false,games=[];
  if(db.game)games.push(db.game);
@@ -382,9 +383,9 @@ function showCardEntry(id){
  document.getElementById("photoBtn").onclick=function(){document.getElementById("cardPhotoFile").click()};
  document.getElementById("recognizeBtn").onclick=function(){run(recognizeCardPhoto)};
  document.getElementById("cardPhotoFile").onchange=function(e){
-   var file=e.target.files[0];if(!file)return;var r=new FileReader();
-   r.onload=function(ev){cardPhotoData=ev.target.result;recognizedCards=[];document.getElementById("photoPreviewWrap").innerHTML='<img class="photoPreview" src="'+cardPhotoData+'">';document.getElementById("recognizeBtn").disabled=false;document.getElementById("recognitionResult").innerHTML='';};
-   r.readAsDataURL(file);
+   var file=e.target.files[0];if(!file)return;
+   document.getElementById("recognitionResult").innerHTML='<div class="notice">Foto wird vorbereitet …</div>';
+   prepareCardPhoto(file).then(function(data){cardPhotoData=data;recognizedCards=[];document.getElementById("photoPreviewWrap").innerHTML='<img class="photoPreview" src="'+cardPhotoData+'">';document.getElementById("recognizeBtn").disabled=false;document.getElementById("recognitionResult").innerHTML='';}).catch(function(err){document.getElementById("recognitionResult").innerHTML='<div class="notice" style="background:#ffeaea;color:#8b2828">Foto konnte nicht vorbereitet werden: '+esc(err.message)+'</div>'});
  };
  var g=document.getElementById("cardGrid"),ranks=["2","3","4","5","6","7","8","9","10","B","D","K","A"],suits=["♣","♠","♥","♦"];
  ranks.forEach(function(r){suits.forEach(function(s){var b=document.createElement("button");b.className="realCardBtn";var img=document.createElement("img");img.src=cardAssetUrl(r,s);img.alt=r+s;img.loading="lazy";b.appendChild(img);var label=document.createElement("div");label.className="cardLabel";label.textContent=r+s;b.appendChild(label);b.onclick=function(){addCard(r+s,cardValue(r))};g.appendChild(b);})});
@@ -393,6 +394,24 @@ function showCardEntry(id){
  document.getElementById("clearBtn").onclick=function(){selectedCards=[];renderSelected()};
  document.getElementById("takeCardsBtn").onclick=function(){run(takeCards)};
  renderSelected();
+}
+function prepareCardPhoto(file){
+ return new Promise(function(resolve,reject){
+   var reader=new FileReader();
+   reader.onerror=function(){reject(new Error("Datei konnte nicht gelesen werden."))};
+   reader.onload=function(ev){
+     var img=new Image();
+     img.onerror=function(){reject(new Error("Bildformat wird nicht unterstützt."))};
+     img.onload=function(){
+       var max=1600,scale=Math.min(1,max/Math.max(img.width,img.height));
+       var canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));
+       var ctx=canvas.getContext("2d");ctx.drawImage(img,0,0,canvas.width,canvas.height);
+       resolve(canvas.toDataURL("image/jpeg",.82));
+     };
+     img.src=ev.target.result;
+   };
+   reader.readAsDataURL(file);
+ });
 }
 function normalizeRecognizedCard(c){
  var rank=String(c.rank||"").toUpperCase().trim(),suit=String(c.suit||"").trim();
@@ -404,7 +423,7 @@ function normalizeRecognizedCard(c){
 function recognizedValue(c){return cardValue(c.rank)}
 function recognizeCardPhoto(){
  if(!cardPhotoData){alert("Bitte zuerst ein Kartenfoto aufnehmen.");return}
- var url=(db.online&&db.online.recognitionUrl||"").trim();if(!url){alert("Unter Einstellungen bitte zuerst die Recognition-URL eintragen.");return}
+ var url=(db.online&&db.online.recognitionUrl||RECOGNITION_URL).trim();
  var btn=document.getElementById("recognizeBtn");btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Erkennung läuft …';document.getElementById("recognitionResult").innerHTML='<div class="notice">Foto wird analysiert …</div>';
  fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({image:cardPhotoData})})
  .then(function(resp){if(!resp.ok)return resp.text().then(function(t){throw new Error("Server "+resp.status+": "+t)});return resp.json()})
