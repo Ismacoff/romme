@@ -1,4 +1,4 @@
-const CACHE = "rommescore-v4.4.5";
+const CACHE = "rommescore-v4.5.0";
 const LOCAL_ASSETS = [
   "./",
   "./index.html",

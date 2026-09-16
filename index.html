@@ -7,13 +7,13 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>RomméScore 4.4.5</title>
+<title>RomméScore 4.5.0</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#073d24;color:#fff}
 .app{max-width:820px;margin:auto;min-height:100vh;background:#0a4b2c}
 .head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#063c23}
-.logo{width:48px;height:58px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:28px}
+.logo{width:58px;height:58px;border-radius:14px;overflow:hidden;flex:none;box-shadow:0 4px 12px #0004}.logo img{display:block;width:100%;height:100%;object-fit:cover}
 .head h1{margin:0;font-size:27px}.head p{margin:4px 0 0;color:#d8efe2}.gear{margin-left:auto;border:0;background:#ffffff18;color:#fff;border-radius:12px;width:46px;height:46px;font-size:22px}
 main{background:#fff;color:#17251e;min-height:calc(100vh - 86px);padding:16px 14px 92px}
 .card{border:1px solid #dfe7e2;border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 6px 18px #00000010}.hero{background:linear-gradient(145deg,#fff,#f4fff8)}
@@ -36,6 +36,7 @@ h2{margin:0 0 8px;font-size:28px}.muted{color:#6d7872}.btn{width:100%;border:0;b
 .recognizedCard button{border:0;background:#ffe8e8;color:#a62b2b;border-radius:999px;width:24px;height:24px;font-weight:900}.conf{font-size:11px;color:#6d7872}
 .addCardRow{display:grid;grid-template-columns:1fr 1fr auto;gap:7px;margin-top:10px}.addCardRow select{padding:10px;border:1px solid #d6e1da;border-radius:10px;background:white}
 .spinner{display:inline-block;width:18px;height:18px;border:3px solid #ffffff66;border-top-color:white;border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle;margin-right:6px}@keyframes spin{to{transform:rotate(360deg)}}
+.wakeStatus{display:flex;align-items:center;gap:9px;border-radius:12px;padding:11px 12px;margin:10px 0;font-weight:800;background:#eaf8ef;color:#155c36}.wakeStatus.off{background:#f2f3f2;color:#68736d}.wakeToggle{width:22px;height:22px;accent-color:#0b6a3f}
 .statsGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
 .statBox{background:#f4f9f6;border:1px solid #e5eee8;border-radius:14px;padding:13px}
 .statBox span{display:block;color:#6d7872;font-size:13px}.statBox b{display:block;font-size:25px;margin-top:3px}
@@ -54,8 +55,8 @@ h2{margin:0 0 8px;font-size:28px}.muted{color:#6d7872}.btn{width:100%;border:0;b
 <body>
 <div class="app">
 <header class="head">
-  <div class="logo">🃏</div>
-  <div><h1>RomméScore</h1><p>Version 4.4.5 · App-Update-Fix</p></div>
+  <div class="logo"><img src="./icon-192.png" alt="RomméScore"></div>
+  <div><h1>RomméScore</h1><p>Version 4.5.0 · Wachbleib-Funktion</p></div>
   <button class="gear" id="gearBtn">⚙️</button>
 </header>
 
@@ -87,11 +88,11 @@ h2{margin:0 0 8px;font-size:28px}.muted{color:#6d7872}.btn{width:100%;border:0;b
 var KEY="rommescore_v35";
 var main=document.getElementById("appMain");
 var db=loadDb();
-var startMode=false, editId=null, pendingAvatar=null, pattern="pat1", frame="f1", avatarScale=1, avatarX=0, avatarY=0, currentLoser=null, selectedCards=[], selectedPlayerIds=[], cardPhotoData=null, dragStartX=0, dragStartY=0, dragBaseX=0, dragBaseY=0, pinchStartDist=0, pinchBaseScale=1,recognizedCards=[],roundSaving=false;
+var startMode=false, editId=null, pendingAvatar=null, pattern="pat1", frame="f1", avatarScale=1, avatarX=0, avatarY=0, currentLoser=null, selectedCards=[], selectedPlayerIds=[], cardPhotoData=null, dragStartX=0, dragStartY=0, dragBaseX=0, dragBaseY=0, pinchStartDist=0, pinchBaseScale=1,recognizedCards=[],roundSaving=false,wakeLock=null,wakeLockState="off";
 var frameColors={f1:"#0b6a3f",f2:"#111",f3:"#e7b548",f4:"#b82d2d",f5:"#315fa7",f6:"#fff"};
 
-function defaults(){return {players:[],game:null,history:[],rules:{ace:11,joker:20,handMultiplier:2},online:{recognitionUrl:""}}}
-function loadDb(){try{var s=localStorage.getItem(KEY),d=s?JSON.parse(s):defaults();if(!d.rules)d.rules=defaults().rules;if(!d.online)d.online={recognitionUrl:""};return d}catch(e){return defaults()}}
+function defaults(){return {players:[],game:null,history:[],rules:{ace:11,joker:20,handMultiplier:2},settings:{keepAwake:true},online:{recognitionUrl:""}}}
+function loadDb(){try{var s=localStorage.getItem(KEY),d=s?JSON.parse(s):defaults();if(!d.rules)d.rules=defaults().rules;if(!d.settings)d.settings={keepAwake:true};if(typeof d.settings.keepAwake!=="boolean")d.settings.keepAwake=true;if(!d.online)d.online={recognitionUrl:""};return d}catch(e){return defaults()}}
 function stripStoredAvatarCopies(){
  var changed=false,games=[];
  if(db.game)games.push(db.game);
@@ -132,6 +133,29 @@ function recalculateGameScores(){
  });
  db.game.round=(db.game.rounds||[]).length;
 }
+function wakeLockSupported(){return "wakeLock" in navigator}
+async function syncWakeLock(){
+ var wanted=!!(db.settings&&db.settings.keepAwake&&db.game&&document.visibilityState==="visible");
+ if(!wakeLockSupported()){wakeLockState="unsupported";updateWakeStatus();return}
+ if(!wanted){
+   if(wakeLock){try{await wakeLock.release()}catch(e){}wakeLock=null}
+   wakeLockState="off";updateWakeStatus();return;
+ }
+ if(wakeLock&&!wakeLock.released){wakeLockState="active";updateWakeStatus();return}
+ try{
+   wakeLock=await navigator.wakeLock.request("screen");wakeLockState="active";
+   wakeLock.addEventListener("release",function(){wakeLock=null;wakeLockState="off";updateWakeStatus()});
+ }catch(e){wakeLock=null;wakeLockState="blocked"}
+ updateWakeStatus();
+}
+function wakeStatusText(){
+ if(wakeLockState==="active")return "☀️ Bildschirm bleibt während der Partie an";
+ if(wakeLockState==="unsupported")return "ℹ️ Wachbleiben wird von diesem Browser nicht unterstützt";
+ if(wakeLockState==="blocked")return "⚠️ Wachbleiben wurde vom Handy blockiert";
+ return "🌙 Bildschirm darf sich ausschalten";
+}
+function updateWakeStatus(){var el=document.getElementById("wakeStatus");if(!el)return;el.textContent=wakeStatusText();el.classList.toggle("off",wakeLockState!=="active")}
+function setKeepAwake(enabled){if(!db.settings)db.settings={};db.settings.keepAwake=!!enabled;saveDb();syncWakeLock();updateWakeStatus()}
 
 function showHome(){
  nav("nGame");
@@ -297,7 +321,7 @@ function startGame(){
  var chosen=db.players.filter(function(p){return selectedPlayerIds.indexOf(String(p.id))>=0});
  if(chosen.length<2){alert("Bitte mindestens zwei Spieler auswählen.");return}
  db.game={round:0,rounds:[],players:chosen.map(function(p){return {id:p.id,name:p.name,score:0}})};
- saveDb();showGame();
+ saveDb();showGame();syncWakeLock();
 }
 function showGame(){
  recalculateGameScores();
@@ -306,6 +330,8 @@ function showGame(){
  document.getElementById("backHome").onclick=function(){run(showHome)};
  var c=document.getElementById("gameCard");
  s.forEach(function(p,i){var r=document.createElement("div");r.className="row"+(i===0&&db.game.round?" winner":"");r.innerHTML=avatar(p)+'<div class="info"><b>'+esc(p.name)+'</b><small>'+(i===0&&db.game.round?'Führt aktuell':'Im Spiel')+'</small></div><div class="score">'+p.score+'</div>';c.appendChild(r)});
+ var wake=document.createElement("div");wake.id="wakeStatus";wake.className="wakeStatus"+(wakeLockState==="active"?"":" off");wake.textContent=wakeStatusText();c.appendChild(wake);
+ c.appendChild(button(db.settings.keepAwake?"🌙 Bildschirm-Wachhalten ausschalten":"☀️ Bildschirm wach halten","light",function(){setKeepAwake(!db.settings.keepAwake);showGame()}));
  c.appendChild(button(validPlayerId(db.game.tempWinner)?"▶️ Angefangene Runde fortsetzen":"➕ Neue Runde","green",function(){if(validPlayerId(db.game.tempWinner))showLosers();else showWinner()}));
  c.appendChild(button("🕘 Rundenhistorie","light",showRoundHistory));
  c.appendChild(button("🏁 Spiel beenden","red",finishGame));
@@ -429,6 +455,7 @@ function finishGame(){
  });
  db.game=null;
  saveDb();
+ syncWakeLock();
  showHistory();
 }
 function showHistory(){
@@ -498,10 +525,10 @@ function showStats(){
 }
 function showSettings(){
  nav("nSettings");var recUrl=(db.online&&db.online.recognitionUrl)||"";
- main.innerHTML='<div id="errorBox"></div><section class="card"><h2>⚙️ Einstellungen</h2><h3>Spielregeln</h3><label>Ass</label><input id="ace" class="field" value="'+db.rules.ace+'"><label>Joker</label><input id="joker" class="field" value="'+db.rules.joker+'"><label>Handspiel-Multiplikator</label><input id="multi" class="field" value="'+db.rules.handMultiplier+'"><h3 style="margin-top:20px">Online-Kartenerkennung</h3><p class="muted">Hier die URL deines sicheren Erkennungs-Backends eintragen. Der API-Key gehört niemals in die HTML-Datei.</p><input id="recognitionUrl" class="field" placeholder="https://dein-worker.workers.dev/recognize" value="'+esc(recUrl)+'"><button class="btn green" id="saveRulesBtn">💾 Einstellungen speichern</button></section>';
+ main.innerHTML='<div id="errorBox"></div><section class="card"><h2>⚙️ Einstellungen</h2><h3>Bildschirm</h3><label class="wakeStatus'+(db.settings.keepAwake?'':' off')+'"><input id="keepAwake" class="wakeToggle" type="checkbox" '+(db.settings.keepAwake?'checked':'')+'> Bildschirm während einer laufenden Partie wach halten</label><p class="muted">Funktioniert, solange RomméScore sichtbar ist. Nach einem App-Wechsel wird sie beim Zurückkehren automatisch erneut aktiviert.</p><h3>Spielregeln</h3><label>Ass</label><input id="ace" class="field" value="'+db.rules.ace+'"><label>Joker</label><input id="joker" class="field" value="'+db.rules.joker+'"><label>Handspiel-Multiplikator</label><input id="multi" class="field" value="'+db.rules.handMultiplier+'"><h3 style="margin-top:20px">Online-Kartenerkennung</h3><p class="muted">Hier die URL deines sicheren Erkennungs-Backends eintragen. Der API-Key gehört niemals in die HTML-Datei.</p><input id="recognitionUrl" class="field" placeholder="https://dein-worker.workers.dev/recognize" value="'+esc(recUrl)+'"><button class="btn green" id="saveRulesBtn">💾 Einstellungen speichern</button></section>';
  document.getElementById("saveRulesBtn").onclick=function(){run(saveRules)};
 }
-function saveRules(){db.rules.ace=Number(document.getElementById("ace").value)||11;db.rules.joker=Number(document.getElementById("joker").value)||20;db.rules.handMultiplier=Number(document.getElementById("multi").value)||2;if(!db.online)db.online={};db.online.recognitionUrl=(document.getElementById("recognitionUrl").value||"").trim();saveDb();alert("Einstellungen gespeichert.")}
+function saveRules(){db.rules.ace=Number(document.getElementById("ace").value)||11;db.rules.joker=Number(document.getElementById("joker").value)||20;db.rules.handMultiplier=Number(document.getElementById("multi").value)||2;if(!db.online)db.online={};db.online.recognitionUrl=(document.getElementById("recognitionUrl").value||"").trim();setKeepAwake(document.getElementById("keepAwake").checked);alert("Einstellungen gespeichert.")}
 
 document.getElementById("gearBtn").onclick=function(){run(showSettings)};
 document.getElementById("nGame").onclick=function(){run(showGameOrHome)};
@@ -513,7 +540,8 @@ document.getElementById("staticNewGame").onclick=function(){run(function(){showP
 document.getElementById("staticContinue").onclick=function(){run(continueGame)};
 document.getElementById("staticPlayers").onclick=function(){run(function(){showPlayers(false)})};
 
-showHome();
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")syncWakeLock();else if(wakeLock){wakeLock.release().catch(function(){})}});
+showHome();syncWakeLock();
 })();
 </script>
 
